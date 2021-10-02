@@ -1,7 +1,7 @@
 /*
  * The following is an API implementation srated from 
  * https://github.com/DeeeeLAN/homebridge-sleepiq/blob/HEAD/API.js (tons of thanks)
- * I also have added footwarmer API 
+ * I also have added pressure API
  */
 
 var request = require('request-promise-native')
@@ -10,18 +10,20 @@ request = request.defaults({jar: true})
 class API {
     constructor (username, password) {
     	// fill these with your SleepIQ account details
-	    this.username = username
-	    this.password = password
+	    this.username = '_YOUR_SLEEPIO_USERNAME_'
+	    this.password = '_YOUR_SLEEPIO_PASSWORD_'
 
 	    this.userID = '' // also the sleeperID I think
-	    this.bedID = ''
+	    this.bedId = ''
 	    this.key = ''
 	    this.json = ''
-	    this.bedSide = 'L'
-	    this.defaultBed = 0 // change if you want the class methods to default to a different bed in your datasets.
+	    this.bedSide = 'R'
+	    this.defaultBed = 1 // change if you want the class methods to default to a different bed in your datasets.
     }
 
     genURL (url, method, body=null, callback=null) {
+        //console.log('uri:https://api.sleepiq.sleepnumber.com/rest/' + url);
+        //console.log('body:' + JSON.stringify(body));
 	    return request(
 	        {
 	            method: method,
@@ -103,7 +105,7 @@ class API {
 			            null,
                         function (data) {
 		                    if (this.json.beds) {
-    			                this.bedID = this.json.beds[this.defaultBed].bedId
+    			                this.bedId = this.json.beds[this.defaultBed].bedId
 		                    }
                           
                             if (callback) {
@@ -118,7 +120,7 @@ class API {
     }
     
     genBedURL(url, body, callback=null) {
-	    return this.genURL('bed/'+this.bedID+url, 'PUT', body, callback);
+	    return this.genURL('bed/'+this.bedId+url, 'PUT', body, callback);
     }
     
     // num is any num in FAVORITE = 1, READ = 2, WATCH_TV = 3, FLAT = 4, ZERO_G = 5, SNORE = 6
@@ -135,14 +137,13 @@ class API {
                             callback);
     }
 
-    // temp [0-100], timer [1-600]
-    footwarming (temp, timer, callback=null) {
-	    return this.genBedURL('/foundation/footwarming', 
-                            this.bedSide === 'L' ? 
-                                { footWarmingTempLeft: temp, footWarmingTimerLeft: timer } : 
-                                { footWarmingTempRight: temp, footWarmingTimerRight: timer }, 
+    // num is any number which is a multiple of 5 in the range [5-100], side is 'L' or 'R'
+    setpressure (num, side, callback=null) {
+	    return this.genBedURL('/sleepNumber', 
+                            {bed: this.bedId, side: side, sleepNumber: num}, 
                             callback);
     }
+    
 }
 
 module.exports = API
