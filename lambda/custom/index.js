@@ -3,17 +3,17 @@ var API = require('./API.js');
 
 const messages = {
   WELCOME:'Welcome, you can say Help or ask me to change your bed settings',
-  OK:'Sure, my pleasure',
+  OK:'Okay',
   ERROR: 'Uh Oh. Looks like something went wrong.',
   ERROR1: 'Sorry, I had trouble doing what you asked. Please try again.',
   GOODBYE: 'Bye! Thanks for using smart bed skill!',
   UNHANDLED: 'This skill doesn\'t support that. Please ask something else.',
-  HELP: 'You can say move my head or legs up or down, you can also ask to set the bed in one of the presets such as: read, watch tv, zero gravity, snore, or favorite, finally you can add on the left or on the right',
+  HELP: 'You can say move my head or legs up or down, you can also ask to set it to one of the presets such as: read, watch tv, zero gravity, snore, or favorite, or set my pressure, finally you can add on the left or on the right',
 };
 
 const SleepIQ = {
-    USERNAME: __YUOR_SLEEPIQ_USERNAME__,
-    PASSWORD: __YOUR_SLEEPIQ_PASSWORD__
+    USERNAME: 'ka8z@email.com',
+    PASSWORD: '_YOUR_SLEEPIQ_PASSWORD_HERE_'
 };
 
 const LaunchRequestHandler = {
@@ -27,6 +27,7 @@ const LaunchRequestHandler = {
             .getResponse();
     }
 };
+
 const BedMovementIntentHandler = {
     canHandle(handlerInput) {
         return doCanHandle(handlerInput, 'BedMovementIntent');
@@ -35,12 +36,29 @@ const BedMovementIntentHandler = {
         return doHandleIntent(handlerInput, (api, slots, intentLogicCallbackCallback) => { //intentLogicCallback(api, slots, intentLogicCallbackCallback)
             var actuator = slots.BedParts.resolutions.resolutionsPerAuthority[0].values[0].value.id
             var num = slots.BedDirections.resolutions.resolutionsPerAuthority[0].values[0].value.id
-            console.log(`Calling bed movement with actuator ${actuator} and num=${num}`);
+            //console.log(`Calling bed movement with actuator ${actuator} and num=${num}`);
             
 	        api.adjust (actuator, num, intentLogicCallbackCallback);
         });
     }
 };
+
+const ChangePressureIntentHandler = {
+    canHandle(handlerInput) {
+        return doCanHandle(handlerInput, 'ChangePressureIntent');
+    },
+    handle(handlerInput) {
+        return doHandleIntent(handlerInput, (api, slots, intentLogicCallbackCallback) => { //intentLogicCallback(api, slots, intentLogicCallbackCallback)
+            var pressure = slots.PressureValues.resolutions.resolutionsPerAuthority[0].values[0].value.id
+            var side = 'R'
+            console.log(`Calling setpressure with SleepNumber of ${pressure} for side %{side`);
+            
+            api.setpressure(pressure, side, intentLogicCallbackCallback); 
+            //api.adjust ('H', pressure, intentLogicCallbackCallback);
+        });
+    }
+};
+
 const PresetIntentHandler = {
     canHandle(handlerInput) {
         return doCanHandle(handlerInput, 'PresetIntent');
@@ -48,23 +66,9 @@ const PresetIntentHandler = {
     handle(handlerInput) {
         return doHandleIntent(handlerInput, (api, slots, intentLogicCallbackCallback) => { //intentLogicCallback(api, slots, intentLogicCallbackCallback)
             var preset = slots.Preset.resolutions.resolutionsPerAuthority[0].values[0].value.id
-        	console.log(`Calling preset with ${preset}`);
+        	//console.log(`Calling preset with ${preset}`);
         	
         	api.preset(preset, intentLogicCallbackCallback);
-        });
-    }
-};
-const WarmerIntentHandler = {
-    canHandle(handlerInput) {
-        return doCanHandle(handlerInput, 'WarmerIntent');
-    },
-    handle(handlerInput) {
-        const timer = 120;
-        return doHandleIntent(handlerInput, (api, slots, intentLogicCallbackErrorCallback) => { //intentLogicCallback(api, slots, intentLogicCallbackErrorCallback)
-            var temp = slots.TempOptions.resolutions.resolutionsPerAuthority[0].values[0].value.id
-            console.log(`Calling footwarming with ${temp} temperature for ${timer} min`);
-            
-            api.footwarming(temp, timer, intentLogicCallbackErrorCallback); 
         });
     }
 };
@@ -83,6 +87,7 @@ const HelpIntentHandler = {
             .getResponse();
     }
 };
+
 const CancelAndStopIntentHandler = {
     canHandle(handlerInput) {
         return Alexa.getRequestType(handlerInput.requestEnvelope) === 'IntentRequest'
@@ -96,6 +101,7 @@ const CancelAndStopIntentHandler = {
             .getResponse();
     }
 };
+
 const SessionEndedRequestHandler = {
     canHandle(handlerInput) {
         return Alexa.getRequestType(handlerInput.requestEnvelope) === 'SessionEndedRequest';
@@ -133,7 +139,7 @@ const ErrorHandler = {
         return true;
     },
     handle(handlerInput, error) {
-        console.log(`~~~~ Error handled: ${error.stack}`);
+       //console.log(`~~~~ Error handled: ${error.stack}`);
         const speakOutput = messages.ERROR1;
 
         return handlerInput.responseBuilder
@@ -144,16 +150,16 @@ const ErrorHandler = {
 };
 
 function doAPISetup (onAPISetupSuccessCallback) {
-    console.log('Creating API object...');
+    //console.log('Creating API object...');
 	var api = new API(SleepIQ.USERNAME, SleepIQ.PASSWORD);
 	        
-	console.log('SleepIQ Authenticating...');
+	//console.log('SleepIQ Authenticating...');
 	api.login((data, err=null) => {
 	    if (err) {
 	        console.log(data, err);
         } 
         else {
-            console.log('Getting bed status...');
+            //console.log('Getting bed status...');
             api.familyStatus(() => {
                 if (onAPISetupSuccessCallback) {
                     onAPISetupSuccessCallback(api);
@@ -173,7 +179,7 @@ function getBedSide(slots) {
         slots.BedSide.resolutions.resolutionsPerAuthority[0].values[0]) {
         side = slots.BedSide.resolutions.resolutionsPerAuthority[0].values[0].value.id
     }
-    console.log('BED SIDE: ' + side);
+    //console.log('BED SIDE: ' + side);
     return side;
 }
 
@@ -203,7 +209,7 @@ async function doHandleIntent(handlerInput, intentLogicCallback) {
             if (intentLogicCallback) {
                 intentLogicCallback(api, slots, (data, err=null) => { //intentLogicCallbackErrorCallback
                 	if (err) {
-        	            console.log(data, err);
+        	            //console.log(data, err);
         	            speakOutput = messages.ERROR;
                 	}
                 });
@@ -226,8 +232,8 @@ exports.handler = Alexa.SkillBuilders.custom()
     .addRequestHandlers(
         LaunchRequestHandler,
         BedMovementIntentHandler,
+        ChangePressureIntentHandler,
         PresetIntentHandler,
-        WarmerIntentHandler,
         HelpIntentHandler,
         CancelAndStopIntentHandler,
         SessionEndedRequestHandler,
